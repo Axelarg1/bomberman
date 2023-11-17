@@ -30,6 +30,7 @@ class Client():
         self.listen_thread.start()
 
     def send(self, message):
+        print("test2",message)
         try:
             username_result = re.search('^USERNAME (.*)$', message)
             # if not username_result:

@@ -19,6 +19,7 @@ class ClientListener(threading.Thread):
             data = ""
             try:
                 data = self.socket.recv(1024).decode('UTF-8')
+                print("okkkkkk",data)
             except OSError:
                 print("Unable to receive data")
             self.handle_msg(data)
