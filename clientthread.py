@@ -33,7 +33,6 @@ class ClientListener(threading.Thread):
         self.server.echo("{0} has quit\n".format(self.username))
 
     def handle_msg(self, data):
-        # print(self.address, "sent :", data)
         username_result = re.search('^USERNAME (.*)$', data)
         if username_result:
             self.username = username_result.group(1)

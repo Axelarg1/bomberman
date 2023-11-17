@@ -33,8 +33,6 @@ class Client():
         print("test2",message)
         try:
             username_result = re.search('^USERNAME (.*)$', message)
-            # if not username_result:
-            # message= "{0}: {1}".format(self.username, message)
             self.socket.sendall(message.encode("UTF-8"))
         except socket.error:
             print("unable to send message")
