@@ -64,7 +64,7 @@ def callback(data):
 
 
 # création d'une instance de classe Client en utilisant les informations (username,server,port)
-client = Client("axel", "192.168.1.119", 59001, callback)
+client = Client("axel", "localhost", 59001, callback)
 # démarrage du thread d'écoute pour que le client puisse recevoir les messages du serveur
 client.listen()
 
@@ -234,45 +234,47 @@ def generate_map(grid):
 def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images, power_ups_images):
 
     generate_map(grid)
-
+    last_send_time = time.time()
+    movement_interval = 0.1
     clock = pygame.time.Clock()
 
     running = True
     game_ended = False
     while running:
-
-        players_mouves = client.listen()
-
         dt = clock.tick(15)
-        for en in enemy_list:
-            en.make_move(grid, bombs, explosions, ene_blocks)
 
         if player.life:
             keys = pygame.key.get_pressed()
             temp = player.direction
             movement = False
+
             if keys[pygame.K_DOWN]:
-                send(json.dumps(
-                    {"player": 1, "x": 0, "y": 1, "temp": 0}) + '\n')
-
+                temp = 0
+                player.move(0, 1, grid, ene_blocks, power_ups)
                 movement = True
-            elif keys[pygame.K_RIGHT]:
-                send(json.dumps(
-                    {"player": 1, "x": 1, "y": 0, "temp": 1}) + '\n')
 
+            elif keys[pygame.K_RIGHT]:
+                temp = 1
+                player.move(1, 0, grid, ene_blocks, power_ups)
                 movement = True
             elif keys[pygame.K_UP]:
-                send(json.dumps(
-                    {"player": 1, "x": 0, "y": -1, "temp": 2}) + '\n')
-
+                temp = 2
+                player.move(0, -1, grid, ene_blocks, power_ups)
                 movement = True
             elif keys[pygame.K_LEFT]:
-                send(json.dumps(
-                    {"player": 1, "x": -1, "y": 0, "temp": 3}) + '\n')
+                temp = 3
+                player.move(-1, 0, grid, ene_blocks, power_ups)
                 movement = True
+
             if temp != player.direction:
                 player.frame = 0
                 player.direction = temp
+
+            if movement and time.time() - last_send_time >= movement_interval:
+                send(json.dumps({"player": 1, "x": keys[pygame.K_RIGHT] - keys[pygame.K_LEFT],
+                                "y": keys[pygame.K_DOWN] - keys[pygame.K_UP], "temp": 0}) + '\n')
+                last_send_time = time.time()
+
             if movement:
                 if player.frame == 2:
                     player.frame = 0
@@ -303,6 +305,12 @@ def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images,
             if temp_player2 != player2.direction:
                 player2.frame = 0
                 player2.direction = temp_player2
+
+            if movement_player2 and time.time() - last_send_time >= movement_interval:
+                send(json.dumps({"player": 2, "x": keys_player2[pygame.K_RIGHT] - keys_player2[pygame.K_LEFT],
+                                "y": keys_player2[pygame.K_DOWN] - keys_player2[pygame.K_UP], "temp": 0}) + '\n')
+                last_send_time = time.time()
+
             if movement_player2:
                 if player2.frame == 2:
                     player2.frame = 0
