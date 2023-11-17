@@ -1,6 +1,15 @@
+# coding = utf-8
 import pygame
 import sys
 import random
+
+# mon import /mon ajout
+from client import Client
+import threading
+import socket
+import time
+import re
+import json
 
 from enums.power_up_type import PowerUpType
 from player import Player
@@ -35,12 +44,41 @@ GRID_BASE = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
              [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
              [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
+grid = [row[:] for row in GRID_BASE]
+
+
+def callback(data):
+    test = json.loads(data)
+    print("callback 0", test)
+    print("callback 1", test["x"])
+
+    if test['player'] == 1:
+        temp = test["y"]
+        player.move(test["x"], test["y"], grid, ene_blocks, power_ups)
+        movement = True
+
+    if test['player'] == 2:
+        temp = test["y"]
+        player2.move(test["x"], test["y"], grid, ene_blocks, power_ups)
+        movement = True
+
+
+# création d'une instance de classe Client en utilisant les informations (username,server,port)
+client = Client("axel", "192.168.1.119", 59001, callback)
+# démarrage du thread d'écoute pour que le client puisse recevoir les messages du serveur
+client.listen()
+
+
+def send(message):
+    if client:
+        # envoie le message récupérer auparavant grâce à la méthode "send"
+        client.send(message)
+
 
 def game_init(surface, path, player_alg, player2_alg, en2_alg, en3_alg, scale):
 
     global font
     font = pygame.font.SysFont('Bebas', scale)
-
     global enemy_list
     global ene_blocks
     global player
@@ -195,15 +233,16 @@ def generate_map(grid):
 
 def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images, power_ups_images):
 
-    grid = [row[:] for row in GRID_BASE]
     generate_map(grid)
-    # power_ups.append(PowerUp(1, 2, PowerUpType.BOMB))
-    # power_ups.append(PowerUp(2, 1, PowerUpType.FIRE))
+
     clock = pygame.time.Clock()
 
     running = True
     game_ended = False
     while running:
+
+        players_mouves = client.listen()
+
         dt = clock.tick(15)
         for en in enemy_list:
             en.make_move(grid, bombs, explosions, ene_blocks)
@@ -213,20 +252,23 @@ def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images,
             temp = player.direction
             movement = False
             if keys[pygame.K_DOWN]:
-                temp = 0
-                player.move(0, 1, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": 1, "x": 0, "y": 1, "temp": 0}) + '\n')
+
                 movement = True
             elif keys[pygame.K_RIGHT]:
-                temp = 1
-                player.move(1, 0, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": 1, "x": 1, "y": 0, "temp": 1}) + '\n')
+
                 movement = True
             elif keys[pygame.K_UP]:
-                temp = 2
-                player.move(0, -1, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": 1, "x": 0, "y": -1, "temp": 2}) + '\n')
+
                 movement = True
             elif keys[pygame.K_LEFT]:
-                temp = 3
-                player.move(-1, 0, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": 1, "x": -1, "y": 0, "temp": 3}) + '\n')
                 movement = True
             if temp != player.direction:
                 player.frame = 0
@@ -316,6 +358,8 @@ def update_bombs(grid, dt):
             explosions.append(exp_temp)
     if player not in enemy_list:
         player.check_death(explosions)
+    if player2 not in enemy_list:
+        player2.check_death(explosions)
     for en in enemy_list:
         en.check_death(explosions)
     for e in explosions:
