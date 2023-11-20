@@ -15,14 +15,14 @@ class ClientListener(threading.Thread):
         self.username = "No username"
 
     def run(self):
-        while self.listening:
+        while self.listening: #Lancement de l'écoute du Thread
             data = ""
             try:
                 data = self.socket.recv(1024).decode('UTF-8')
                 print("okkkkkk",data)
             except OSError:
                 print("Unable to receive data")
-            self.handle_msg(data)
+            self.handle_msg(data)   #Saisie de la donnée reçu par l'écoute (appel de la fonction handle_msg l.35)
             time.sleep(0.1)
         print("Ending client thread for", self.address)
 
@@ -32,7 +32,7 @@ class ClientListener(threading.Thread):
         self.server.remove_socket(self.socket)
         self.server.echo("{0} has quit\n".format(self.username))
 
-    def handle_msg(self, data):
+    def handle_msg(self, data): #Traitement de la donnée 
         username_result = re.search('^USERNAME (.*)$', data)
         if username_result:
             self.username = username_result.group(1)
@@ -42,4 +42,4 @@ class ClientListener(threading.Thread):
         elif data == "":
             self.quit()
         else:
-            self.server.echo(data)
+            self.server.echo(data)  #Envoi de la donnée au server (appel de la fonction echo de server.py l.47)

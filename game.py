@@ -44,35 +44,78 @@ GRID_BASE = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
              [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
              [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
-grid = [row[:] for row in GRID_BASE]
+#grid = [row[:] for row in GRID_BASE]
+
+grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 3, 0, 1], [1, 0, 1, 2, 1, 
+2, 1, 2, 1, 2, 1, 0, 1], [1, 0, 2, 2, 2, 0, 2, 2, 2, 0, 0, 0, 1], [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 1], [1, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2, 0, 1], [1, 2, 1, 2, 1, 0, 1, 0, 1, 0, 1, 2, 1], [1, 2, 2, 2, 2, 2, 
+2, 2, 0, 2, 2, 2, 1], [1, 2, 1, 2, 1, 0, 1, 2, 1, 0, 1, 0, 1], [1, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2, 0, 1], 
+[1, 0, 1, 0, 1, 0, 1, 2, 1, 0, 1, 0, 1], [1, 0, 3, 2, 2, 2, 2, 0, 2, 2, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1]] #doit être mis en dure pour éviter d'avoir une map vide (elle doit correspondre à la genération mise en dure aussi)
 
 
-def affect(my_id):
-    global player_id
-    player_id = json.loads(my_id)
-    print("my_id",my_id)
+def affect(my_id):  #Affectation de l'id du joueur
+    if not 'player_id' in globals():
+        global player_id
+        player_id = json.loads(my_id)
+        print("Vous êtes le joueur ",my_id)
 
-def callback(data):
-    if data[0] == "{":
-        test = json.loads(data)
-        print("callback 0", test)
-        print("callback 1", test["x"])
+def callback(data): #Fonction d'écoute du retour du serveur (étape X (final) du cheminement))
+    print("data",data,len(data))
+    if data[0] == "{":  #Vérifi si le text reçu est un objet stringifié
+        try:
+            test = json.loads(data)
+            # print("callback 0", test)
+            # print("callback 1", test["x"])
+            if test['player'] == 1:
+                try:
+                    temp = test["y"]
+                    player.move(test["x"], test["y"], grid, ene_blocks, power_ups)
+                    movement = True
 
-        if test['player'] == 1:
-            temp = test["y"]
-            player.move(test["x"], test["y"], grid, ene_blocks, power_ups)
-            movement = True
+                    if temp != player.direction:    
+                        player.frame = 0
+                        player.direction = temp
+                    if movement:
+                        if player.frame == 2:
+                            player.frame = 0
+                        else:
+                            player.frame += 1
+                except:
+                       
+                    temp_bomb = player.plant_bomb(grid)
+                    bombs.append(temp_bomb)
+                    grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
+                    player.bomb_limit -= 1
 
-        if test['player'] == 2:
-            temp = test["y"]
-            player2.move(test["x"], test["y"], grid, ene_blocks, power_ups)
-            movement = True
+            if test['player'] == 2:
+                try:
+                    temp = test["y"]
+                    player2.move(test["x"], test["y"], grid, ene_blocks, power_ups)
+                    movement = True
+
+                    if temp != player.direction:    
+                        player2.frame = 0
+                        player2.direction = temp
+                    if movement:
+                        if player2.frame == 2:
+                            player2.frame = 0
+                        else:
+                            player2.frame += 1
+                except:
+                    temp_bomb = player2.plant_bomb(grid)
+                    bombs.append(temp_bomb)
+                    grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
+                    player2.bomb_limit -= 1
+
+        except Exception as error:
+            print("error",error)
+
     else:
         affect(data[0])
 
 
 # création d'une instance de classe Client en utilisant les informations (username,server,port)
-client = Client("player", "192.168.252.24", 59001, callback)
+client = Client("player", "192.168.1.100", 59001, callback)
 # démarrage du thread d'écoute pour que le client puisse recevoir les messages du serveur
 client.listen()
 
@@ -108,17 +151,17 @@ def game_init(surface, path, player_alg, player2_alg, en2_alg, en3_alg, scale):
     player2.load_animations(scale)
     ene_blocks.append(player2)
 
-    if en2_alg is not Algorithm.NONE:
-        en2 = Enemy(1, 11, en2_alg)
-        en2.load_animations('2', scale)
-        enemy_list.append(en2)
-        ene_blocks.append(en2)
+    # if en2_alg is not Algorithm.NONE:     Partie gestio des apparitions des bots
+    #     en2 = Enemy(1, 11, en2_alg)
+    #     en2.load_animations('2', scale)
+    #     enemy_list.append(en2)
+    #     ene_blocks.append(en2)
 
-    if en3_alg is not Algorithm.NONE:
-        en3 = Enemy(11, 1, en3_alg)
-        en3.load_animations('3', scale)
-        enemy_list.append(en3)
-        ene_blocks.append(en3)
+    # if en3_alg is not Algorithm.NONE:
+    #     en3 = Enemy(11, 1, en3_alg)
+    #     en3.load_animations('3', scale)
+    #     enemy_list.append(en3)
+    #     ene_blocks.append(en3)
 
     if player_alg is Algorithm.PLAYER:
         player.load_animations(scale)
@@ -227,68 +270,78 @@ def draw(s, grid, tile_size, show_path, game_ended, terrain_images, bomb_images,
 
 
 def generate_map(grid):
-    for i in range(1, len(grid) - 1):
-        for j in range(1, len(grid[i]) - 1):
-            if grid[i][j] != 0:
-                continue
-            elif (i < 3 or i > len(grid) - 4) and (j < 3 or j > len(grid[i]) - 4):
-                continue
-            if random.randint(0, 9) < 7:
-                grid[i][j] = 2
+    # for i in range(1, len(grid) - 1):
+    #     for j in range(1, len(grid[i]) - 1):
+    #         if grid[i][j] != 0:
+    #             continue
+    #         elif (i < 3 or i > len(grid) - 4) and (j < 3 or j > len(grid[i]) - 4):
+    #             continue
+    #         if random.randint(0, 9) < 7:
+    #             grid[i][j] = 2
+    grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],    #Map prédéfini (copie à la sortie d'un generated_map basique)
+    [1, 0, 0, 2, 2, 2, 2, 2, 2, 2, 3, 0, 1],
+    [1, 0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 1],
+    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+    [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1],
+    [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1],
+    [1, 2, 1, 2, 1, 2, 1, 0, 1, 2, 1, 2, 1],
+    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+    [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 1],
+    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+    [1, 0, 1, 0, 1, 2, 1, 2, 1, 2, 1, 0, 1],
+    [1, 0, 3, 2, 2, 2, 2, 2, 2, 2, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
     return
 
 
 def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images, power_ups_images):
-
     generate_map(grid)
-    last_send_time = time.time()
-    movement_interval = 0.1
+
     clock = pygame.time.Clock()
 
     running = True
     game_ended = False
     while running:
+        players_mouves = client.listen()
+
         dt = clock.tick(15)
+        for en in enemy_list:
+            en.make_move(grid, bombs, explosions, ene_blocks)
 
         if player.life:
             keys = pygame.key.get_pressed()
+            global temp
+            global movement
             temp = player.direction
             movement = False
-
             if keys[pygame.K_DOWN]:
-                temp = 0
-                player.move(0, 1, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": player_id, "x": 0, "y": 1, "temp": 0 }))
+                # player.move(0, 1, grid, ene_blocks, power_ups)
                 movement = True
-
             elif keys[pygame.K_RIGHT]:
-                temp = 1
-                player.move(1, 0, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": player_id, "x": 1, "y": 0, "temp": 1 }))
+
                 movement = True
             elif keys[pygame.K_UP]:
-                temp = 2
-                player.move(0, -1, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": player_id, "x": 0, "y": -1, "temp": 2 }))
+
                 movement = True
             elif keys[pygame.K_LEFT]:
-                temp = 3
-                player.move(-1, 0, grid, ene_blocks, power_ups)
+                send(json.dumps(
+                    {"player": player_id, "x": -1, "y": 0, "temp": 3 }))
                 movement = True
-
-            if temp != player.direction:
-                player.frame = 0
-                player.direction = temp
-
-            if movement and time.time() - last_send_time >= movement_interval:
-                send(json.dumps({"player": 1, "x": keys[pygame.K_RIGHT] - keys[pygame.K_LEFT],
-                                "y": keys[pygame.K_DOWN] - keys[pygame.K_UP], "temp": 0}) + '\n')
-                last_send_time = time.time()
-
-            if movement:
-                if player.frame == 2:
-                    player.frame = 0
-                else:
-                    player.frame += 1
-
+            # if temp != player.direction:
+            #     player.frame = 0
+            #     player.direction = temp
+            # if movement:
+            #     if player.frame == 2:
+            #         player.frame = 0
+            #     else:
+            #         player.frame += 1
         if player2.life:
             keys_player2 = pygame.key.get_pressed()
             temp_player2 = player2.direction
@@ -309,52 +362,44 @@ def main(s, tile_size, show_path, terrain_images, bomb_images, explosion_images,
                 temp_player2 = 3
                 player2.move(-1, 0, grid, ene_blocks, power_ups)
                 movement_player2 = True
-
             if temp_player2 != player2.direction:
                 player2.frame = 0
                 player2.direction = temp_player2
-
-            if movement_player2 and time.time() - last_send_time >= movement_interval:
-                send(json.dumps({"player": 2, "x": keys_player2[pygame.K_RIGHT] - keys_player2[pygame.K_LEFT],
-                                "y": keys_player2[pygame.K_DOWN] - keys_player2[pygame.K_UP], "temp": 0}) + '\n')
-                last_send_time = time.time()
-
             if movement_player2:
                 if player2.frame == 2:
                     player2.frame = 0
                 else:
                     player2.frame += 1
-
         draw(s, grid, tile_size, show_path, game_ended, terrain_images,
              bomb_images, explosion_images, power_ups_images)
-
         if not game_ended:
             game_ended = check_end_game()
-
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 sys.exit(0)
             elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_SPACE:
-                    if player.bomb_limit == 0 or not player.life:
-                        continue
-                    temp_bomb = player.plant_bomb(grid)
-                    bombs.append(temp_bomb)
-                    grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
-                    player.bomb_limit -= 1
+                if e.key == pygame.K_SPACE: #Envoi des bombs
+                    send(json.dumps({"player": player_id, "bomb": True }))
+                    # if player.bomb_limit == 0 or not player.life:
+                    #     continue
+                    # temp_bomb = player.plant_bomb(grid)
+                    # bombs.append(temp_bomb)
+                    # grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
+                    # player.bomb_limit -= 1
                 elif e.key == pygame.K_ESCAPE:
                     running = False
                 if e.key == pygame.K_r:
-                    if player2.bomb_limit == 0 or not player2.life:
-                        continue
-                    temp_bomb = player2.plant_bomb(grid)
-                    bombs.append(temp_bomb)
-                    grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
-                    player2.bomb_limit -= 1
+                    send(json.dumps({"player": player_id, "bomb": True }))
+                    # if player2.bomb_limit == 0 or not player2.life:
+                    #     continue
+                    # temp_bomb = player2.plant_bomb(grid)
+                    # bombs.append(temp_bomb)
+                    # grid[temp_bomb.pos_x][temp_bomb.pos_y] = 3
+                    # player2.bomb_limit -= 1
                 elif e.key == pygame.K_ESCAPE:
                     running = False
-
-        update_bombs(grid, dt)
+    
+        update_bombs(grid, dt) #à ne surtout sortir du while sinon les bombes n'exposent pas
 
     explosions.clear()
     enemy_list.clear()
